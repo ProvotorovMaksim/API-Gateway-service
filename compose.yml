@@ -1,0 +1,17 @@
+services:
+  api-gateway:
+    build: .
+    container_name: api-gateway
+    ports:
+      - "8000:8000" # Единый порт для всего фронтенда
+    environment:
+      JWT_SECRET_KEY: "AOJNFOADNLAKMFANKDFOnAOLNFALS<E23roj2nroWJNijbsdfojnsdlfno2jnfowjbndfiusb9fogbsdfnsldknf"
+      AUTH_SERVICE_URL: "http://register-auth-service:8007" # Замените на реальное имя контейнера Auth
+      BILLING_SERVICE_URL: "http://billing-service:8008"
+      NOTIFICATION_SERVICE_URL: "http://notification-service:8009"
+    networks:
+      - saas_network
+    restart: unless-stopped
+networks:
+  saas_network:
+    external: true
