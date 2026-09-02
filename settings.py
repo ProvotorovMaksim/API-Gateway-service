@@ -6,9 +6,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
 
     # Внутренние URL сервисов (имена контейнеров в Docker-сети)
-    AUTH_SERVICE_URL: str = "http://auth-service:8000"
-    BILLING_SERVICE_URL: str = "http://billing-service:8008"
-    NOTIFICATION_SERVICE_URL: str = "http://notification-service:8009"
+    SERVICES_URLS: dict[str, str] = {
+        "auth": "http://register-auth-service:8001",
+        "problem-service": "http://problem-service:8002",
+    }
 
     class Config:
         env_file = ".env"

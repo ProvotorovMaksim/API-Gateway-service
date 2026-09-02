@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException, Depends
-from fastapi.responses import Response  # <-- Добавлено для безопасного проксирования
+from fastapi.responses import Response, FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError, ExpiredSignatureError
 import httpx
@@ -18,15 +18,23 @@ http_client = httpx.AsyncClient()
 async def shutdown_event():
     await http_client.aclose()
 
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+@app.get("/", include_in_schema=False)
+async def serve_frontend():
+    return FileResponse("index.html")
+
+# --- Гибкая проверка токена ---
+async def verify_token_optional(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Проверяет токен, но только если путь не начинается с auth/"""
+    path = request.url.path
+    
+    # Для auth-эндпоинтов токен не требуется
+    if path.startswith("/api/auth/"):
+        return None
+    
     if not credentials:
         raise HTTPException(status_code=401, detail="Отсутствует заголовок авторизации")
     
     token = credentials.credentials
-    
-    # ОТЛАДКА: Выводим ровно ту строку, которую пытается расшифровать jose
-    logger.info(f"DEBUG: Попытка декодировать токен длиной {len(token)}: '{token[:20]}...'")
-    
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
@@ -39,53 +47,43 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
         logger.error(f"Ошибка валидации JWT: {str(e)}")
         raise HTTPException(status_code=401, detail=f"Недействительный токен: {str(e)}")
 
-@app.api_route("/api/billing/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], operation_id="proxy_billing")
-async def proxy_to_billing(request: Request, path: str, user_id: str = Depends(verify_token)):
-    target_url = f"{settings.BILLING_SERVICE_URL}/{path}"
+# --- Единый прокси-маршрут ---
+@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_to_service(request: Request, path: str, user_id: str = Depends(verify_token_optional)):
+    service_name = path.split("/")[0]
     
+    if service_name not in settings.SERVICES_URLS:
+        raise HTTPException(status_code=404, detail=f"Сервис '{service_name}' не найден")
+    
+    remaining_path = path[len(service_name):].lstrip("/")
+    base_url = settings.SERVICES_URLS[service_name]
+    target_url = f"{base_url}/{remaining_path}" if remaining_path else base_url
+
     headers = dict(request.headers)
-    headers["X-User-Id"] = user_id
+    if user_id:  # Добавляем X-User-Id только если токен был валиден
+        headers["X-User-Id"] = user_id
     headers.pop("host", None)
     headers.pop("content-length", None)
     
-    response = await http_client.request(
-        method=request.method,
-        url=target_url,
-        headers=headers,
-        params=request.query_params,
-        content=await request.body()
-    )
-    
-    # ИСПРАВЛЕНИЕ: Возвращаем сырой ответ, а не форсируем .json()
-    return Response(
-        content=response.content,
-        status_code=response.status_code,
-        media_type=response.headers.get("content-type", "application/json")
-    )
+    try:
+        response = await http_client.request(
+            method=request.method,
+            url=target_url,
+            headers=headers,
+            params=request.query_params,
+            content=await request.body()
+        )
+        
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type=response.headers.get("content-type", "application/json"),
+            headers={k: v for k, v in response.headers.items() if k.lower() not in ["content-length", "transfer-encoding"]}
+        )
+    except httpx.RequestError as exc:
+        logger.error(f"Ошибка проксирования к {target_url}: {exc}")
+        raise HTTPException(status_code=502, detail=f"Не удалось связаться с сервисом '{service_name}'")
 
-@app.api_route("/api/notifications/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], operation_id="proxy_notifications")
-async def proxy_to_notifications(request: Request, path: str, user_id: str = Depends(verify_token)):
-    target_url = f"{settings.NOTIFICATION_SERVICE_URL}/{path}"
-    
-    headers = dict(request.headers)
-    headers["X-User-Id"] = user_id
-    headers.pop("host", None)
-    headers.pop("content-length", None)
-    
-    response = await http_client.request(
-        method=request.method,
-        url=target_url,
-        headers=headers,
-        params=request.query_params,
-        content=await request.body()
-    )
-    
-    return Response(
-        content=response.content,
-        status_code=response.status_code,
-        media_type=response.headers.get("content-type", "application/json")
-    )
-
-@app.get("/health")
+@app.get("/health", include_in_schema=False)
 async def health_check():
-    return {"status": "API Gateway is running"}
+    return {"status": "ok"}
