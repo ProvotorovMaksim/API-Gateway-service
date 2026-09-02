@@ -20,7 +20,7 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             echo "Переход в директорию проекта..."
-            cd ~/Registration-backend-service
+            cd ~/API-Gateway-service
             
             echo "Сброс локальных изменений (чтобы git pull не конфликтовал)..."
             git reset --hard HEAD
