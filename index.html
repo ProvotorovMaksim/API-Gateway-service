@@ -8,14 +8,12 @@
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
 
-    <!-- ЭКРАН АВТОРИЗАЦИИ И РЕГИСТРАЦИИ -->
     <div id="auth-screen" class="max-w-md mx-auto mt-20 bg-white p-8 rounded-lg shadow-lg">
         <div class="flex mb-6 border-b">
             <button id="tab-login" class="flex-1 pb-2 text-center font-medium text-blue-600 border-b-2 border-blue-600 transition">Вход</button>
             <button id="tab-register" class="flex-1 pb-2 text-center font-medium text-gray-500 hover:text-gray-700 transition">Регистрация</button>
         </div>
 
-        <!-- Форма входа -->
         <form id="login-form" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Логин</label>
@@ -29,7 +27,6 @@
             <button type="submit" class="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition">Войти</button>
         </form>
 
-        <!-- Форма регистрации -->
         <form id="register-form" class="space-y-4 hidden">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Логин</label>
@@ -48,30 +45,17 @@
         </form>
     </div>
 
-    <!-- ЭКРАН ДАШБОРДА -->
     <div id="dashboard-screen" class="hidden max-w-7xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <h1 class="text-3xl font-bold text-gray-800">Мониторинг проблем и лидов</h1>
-            
             <div class="flex flex-wrap gap-2">
-                <button onclick="triggerAction('/', 'Пайплайн парсинга запущен в фоне')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm font-medium">
-                    Запустить парсинг
-                </button>
-                <button onclick="triggerAction('/normalize-problems', 'Нормализация проблем запущена в фоне')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition text-sm font-medium">
-                    Нормализовать проблемы
-                </button>
-                <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">
-                    Обновить таблицу
-                </button>
-                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition text-sm font-medium">
-                    Выйти
-                </button>
+                <button onclick="triggerAction('/', 'Пайплайн запущен')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm font-medium">Запустить парсинг</button>
+                <button onclick="triggerAction('/normalize-problems', 'Нормализация запущена')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition text-sm font-medium">Нормализовать</button>
+                <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">Обновить</button>
+                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition text-sm font-medium">Выйти</button>
             </div>
         </div>
-
-        <!-- Уведомление о действии -->
         <div id="status-msg" class="hidden mb-4 p-3 bg-green-100 text-green-800 rounded border border-green-200 text-sm"></div>
-
         <div id="loading" class="text-center text-gray-500 py-10">Загрузка данных...</div>
         <div id="problems-container" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
     </div>
@@ -85,7 +69,6 @@
             const loginForm = document.getElementById('login-form');
             const registerForm = document.getElementById('register-form');
 
-            // Переключение вкладок
             tabLogin.addEventListener('click', () => {
                 loginForm.classList.remove('hidden');
                 registerForm.classList.add('hidden');
@@ -104,12 +87,10 @@
                 tabLogin.classList.add('text-gray-500');
             });
 
-            // Проверка токена при загрузке
             if (localStorage.getItem('auth_token')) {
                 showDashboard();
             }
 
-            // Обработка входа
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const errorMsg = document.getElementById('login-error');
@@ -122,7 +103,6 @@
                             password: document.getElementById('login-password').value
                         })
                     });
-
                     if (response.ok) {
                         const data = await response.json();
                         localStorage.setItem('auth_token', data.access_token || data.token);
@@ -133,12 +113,11 @@
                         errorMsg.classList.remove('hidden');
                     }
                 } catch (error) {
-                    errorMsg.innerText = "Ошибка соединения с сервером";
+                    errorMsg.innerText = "Ошибка соединения";
                     errorMsg.classList.remove('hidden');
                 }
             });
 
-            // Обработка регистрации
             registerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const errorMsg = document.getElementById('reg-error');
@@ -152,22 +131,17 @@
                             password: document.getElementById('reg-password').value
                         })
                     });
-
                     if (response.ok) {
-                        alert("Регистрация успешна. Теперь войдите в систему.");
+                        alert("Регистрация успешна. Войдите в систему.");
                         tabLogin.click();
                         registerForm.reset();
                     } else {
                         const err = await response.json();
-                        if (Array.isArray(err.detail)) {
-                            errorMsg.innerText = err.detail.map(e => e.msg).join(', ');
-                        } else {
-                            errorMsg.innerText = err.detail || "Ошибка регистрации";
-                        }
+                        errorMsg.innerText = Array.isArray(err.detail) ? err.detail.map(e => e.msg).join(', ') : (err.detail || "Ошибка регистрации");
                         errorMsg.classList.remove('hidden');
                     }
                 } catch (error) {
-                    errorMsg.innerText = "Ошибка соединения с сервером";
+                    errorMsg.innerText = "Ошибка соединения";
                     errorMsg.classList.remove('hidden');
                 }
             });
@@ -175,25 +149,17 @@
             function showDashboard() {
                 authScreen.classList.add('hidden');
                 dashboardScreen.classList.remove('hidden');
-                document.body.classList.remove('items-center', 'justify-center');
                 loadData();
             }
 
-            // Функция для кнопок действий
             window.triggerAction = async function(endpoint, successMsg) {
                 const msgBox = document.getElementById('status-msg');
-                msgBox.innerText = successMsg + " (результат будет виден после обновления таблицы)";
+                msgBox.innerText = successMsg;
                 msgBox.classList.remove('hidden');
                 setTimeout(() => msgBox.classList.add('hidden'), 5000);
-                
-                try {
-                    await fetch(endpoint, { method: 'GET' });
-                } catch (error) {
-                    console.error('Ошибка выполнения действия:', error);
-                }
+                await fetch(endpoint, { method: 'GET' });
             }
 
-            // Загрузка данных
             async function loadData() {
                 const token = localStorage.getItem('auth_token');
                 const container = document.getElementById('problems-container');
@@ -206,25 +172,18 @@
                     const response = await fetch('/api/problem-service/top-problems-with-leads', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
-
-                    if (response.status === 401) {
-                        logout();
-                        return;
-                    }
-
+                    if (response.status === 401) { logout(); return; }
                     const data = await response.json();
                     
                     if (data.length === 0) {
-                        container.innerHTML = '<p class="text-gray-500 col-span-full text-center">Данных пока нет. Нажмите "Запустить парсинг" и подождите.</p>';
+                        container.innerHTML = '<p class="text-gray-500 col-span-full text-center">Данных пока нет. Нажмите "Запустить парсинг".</p>';
                     } else {
                         data.forEach(item => {
                             const card = document.createElement('div');
                             card.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition';
-                            
                             const linksHtml = item.leads && item.leads.length > 0 
                                 ? item.leads.map(link => `<a href="${link}" target="_blank" class="block text-blue-600 hover:text-blue-800 hover:underline text-sm mb-2 truncate" title="${link}">Ссылка: ${link.split('/').pop().substring(0, 40)}...</a>`).join('')
                                 : '<span class="text-gray-400 text-sm">Ссылки отсутствуют</span>';
-
                             card.innerHTML = `
                                 <div class="flex justify-between items-start mb-4">
                                     <h2 class="text-lg font-semibold text-gray-900 leading-tight">${item.problem}</h2>
@@ -236,8 +195,7 @@
                         });
                     }
                 } catch (error) {
-                    console.error('Ошибка загрузки:', error);
-                    container.innerHTML = '<p class="text-red-500 col-span-full text-center">Ошибка загрузки данных.</p>';
+                    container.innerHTML = '<p class="text-red-500 col-span-full text-center">Ошибка загрузки.</p>';
                 } finally {
                     loading.classList.add('hidden');
                 }
@@ -247,473 +205,7 @@
                 localStorage.removeItem('auth_token');
                 location.reload();
             }
-            
-            // Делаем loadData доступной глобально для кнопки обновления
             window.loadData = loadData;
-        });
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система анализа проблем</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen p-4">
-
-    <!-- ЭКРАН АВТОРИЗАЦИИ И РЕГИСТРАЦИИ -->
-    <div id="auth-screen" class="max-w-md mx-auto mt-20 bg-white p-8 rounded-lg shadow-lg">
-        <div class="flex mb-6 border-b">
-            <button id="tab-login" class="flex-1 pb-2 text-center font-medium text-blue-600 border-b-2 border-blue-600 transition">Вход</button>
-            <button id="tab-register" class="flex-1 pb-2 text-center font-medium text-gray-500 hover:text-gray-700 transition">Регистрация</button>
-        </div>
-
-        <!-- Форма входа -->
-        <form id="login-form" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Логин</label>
-                <input type="text" id="login-username" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Пароль</label>
-                <input type="password" id="login-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <p id="login-error" class="text-red-600 text-sm hidden"></p>
-            <button type="submit" class="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition">Войти</button>
-        </form>
-
-        <!-- Форма регистрации -->
-        <form id="register-form" class="space-y-4 hidden">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Логин</label>
-                <input type="text" id="reg-username" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Email</label>
-                <input type="email" id="reg-email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Пароль</label>
-                <input type="password" id="reg-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <p id="reg-error" class="text-red-600 text-sm hidden"></p>
-            <button type="submit" class="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium transition">Зарегистрироваться</button>
-        </form>
-    </div>
-
-    <!-- ЭКРАН ДАШБОРДА -->
-    <div id="dashboard-screen" class="hidden max-w-7xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <h1 class="text-3xl font-bold text-gray-800">Мониторинг проблем и лидов</h1>
-            
-            <div class="flex flex-wrap gap-2">
-                <button onclick="triggerAction('/', 'Пайплайн парсинга запущен в фоне')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm font-medium">
-                    Запустить парсинг
-                </button>
-                <button onclick="triggerAction('/normalize-problems', 'Нормализация проблем запущена в фоне')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition text-sm font-medium">
-                    Нормализовать проблемы
-                </button>
-                <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">
-                    Обновить таблицу
-                </button>
-                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition text-sm font-medium">
-                    Выйти
-                </button>
-            </div>
-        </div>
-
-        <!-- Уведомление о действии -->
-        <div id="status-msg" class="hidden mb-4 p-3 bg-green-100 text-green-800 rounded border border-green-200 text-sm"></div>
-
-        <div id="loading" class="text-center text-gray-500 py-10">Загрузка данных...</div>
-        <div id="problems-container" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const authScreen = document.getElementById('auth-screen');
-            const dashboardScreen = document.getElementById('dashboard-screen');
-            const tabLogin = document.getElementById('tab-login');
-            const tabRegister = document.getElementById('tab-register');
-            const loginForm = document.getElementById('login-form');
-            const registerForm = document.getElementById('register-form');
-
-            // Переключение вкладок
-            tabLogin.addEventListener('click', () => {
-                loginForm.classList.remove('hidden');
-                registerForm.classList.add('hidden');
-                tabLogin.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-                tabLogin.classList.remove('text-gray-500');
-                tabRegister.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-                tabRegister.classList.add('text-gray-500');
-            });
-
-            tabRegister.addEventListener('click', () => {
-                registerForm.classList.remove('hidden');
-                loginForm.classList.add('hidden');
-                tabRegister.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-                tabRegister.classList.remove('text-gray-500');
-                tabLogin.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-                tabLogin.classList.add('text-gray-500');
-            });
-
-            // Проверка токена при загрузке
-            if (localStorage.getItem('auth_token')) {
-                showDashboard();
-            }
-
-            // Обработка входа
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const errorMsg = document.getElementById('login-error');
-                try {
-                    const response = await fetch('/api/auth/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            username: document.getElementById('login-username').value,
-                            password: document.getElementById('login-password').value
-                        })
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        localStorage.setItem('auth_token', data.access_token || data.token);
-                        showDashboard();
-                    } else {
-                        const err = await response.json();
-                        errorMsg.innerText = err.detail || "Ошибка входа";
-                        errorMsg.classList.remove('hidden');
-                    }
-                } catch (error) {
-                    errorMsg.innerText = "Ошибка соединения с сервером";
-                    errorMsg.classList.remove('hidden');
-                }
-            });
-
-            // Обработка регистрации
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const errorMsg = document.getElementById('reg-error');
-                try {
-                    const response = await fetch('/api/auth/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            username: document.getElementById('reg-username').value,
-                            email: document.getElementById('reg-email').value,
-                            password: document.getElementById('reg-password').value
-                        })
-                    });
-
-                    if (response.ok) {
-                        alert("Регистрация успешна. Теперь войдите в систему.");
-                        tabLogin.click();
-                        registerForm.reset();
-                    } else {
-                        const err = await response.json();
-                        if (Array.isArray(err.detail)) {
-                            errorMsg.innerText = err.detail.map(e => e.msg).join(', ');
-                        } else {
-                            errorMsg.innerText = err.detail || "Ошибка регистрации";
-                        }
-                        errorMsg.classList.remove('hidden');
-                    }
-                } catch (error) {
-                    errorMsg.innerText = "Ошибка соединения с сервером";
-                    errorMsg.classList.remove('hidden');
-                }
-            });
-
-            function showDashboard() {
-                authScreen.classList.add('hidden');
-                dashboardScreen.classList.remove('hidden');
-                document.body.classList.remove('items-center', 'justify-center');
-                loadData();
-            }
-
-            // Функция для кнопок действий
-            window.triggerAction = async function(endpoint, successMsg) {
-                const msgBox = document.getElementById('status-msg');
-                msgBox.innerText = successMsg + " (результат будет виден после обновления таблицы)";
-                msgBox.classList.remove('hidden');
-                setTimeout(() => msgBox.classList.add('hidden'), 5000);
-                
-                try {
-                    await fetch(endpoint, { method: 'GET' });
-                } catch (error) {
-                    console.error('Ошибка выполнения действия:', error);
-                }
-            }
-
-            // Загрузка данных
-            async function loadData() {
-                const token = localStorage.getItem('auth_token');
-                const container = document.getElementById('problems-container');
-                const loading = document.getElementById('loading');
-                
-                loading.classList.remove('hidden');
-                container.innerHTML = '';
-
-                try {
-                    const response = await fetch('/api/problem-service/top-problems-with-leads', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    if (response.status === 401) {
-                        logout();
-                        return;
-                    }
-
-                    const data = await response.json();
-                    
-                    if (data.length === 0) {
-                        container.innerHTML = '<p class="text-gray-500 col-span-full text-center">Данных пока нет. Нажмите "Запустить парсинг" и подождите.</p>';
-                    } else {
-                        data.forEach(item => {
-                            const card = document.createElement('div');
-                            card.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition';
-                            
-                            const linksHtml = item.leads && item.leads.length > 0 
-                                ? item.leads.map(link => `<a href="${link}" target="_blank" class="block text-blue-600 hover:text-blue-800 hover:underline text-sm mb-2 truncate" title="${link}">Ссылка: ${link.split('/').pop().substring(0, 40)}...</a>`).join('')
-                                : '<span class="text-gray-400 text-sm">Ссылки отсутствуют</span>';
-
-                            card.innerHTML = `
-                                <div class="flex justify-between items-start mb-4">
-                                    <h2 class="text-lg font-semibold text-gray-900 leading-tight">${item.problem}</h2>
-                                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap ml-2">${item.mentions}</span>
-                                </div>
-                                <div class="border-t pt-3 space-y-1">${linksHtml}</div>
-                            `;
-                            container.appendChild(card);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Ошибка загрузки:', error);
-                    container.innerHTML = '<p class="text-red-500 col-span-full text-center">Ошибка загрузки данных.</p>';
-                } finally {
-                    loading.classList.add('hidden');
-                }
-            }
-
-            window.logout = function() {
-                localStorage.removeItem('auth_token');
-                location.reload();
-            }
-            
-            // Делаем loadData доступной глобально для кнопки обновления
-            window.loadData = loadData;
-        });
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система анализа проблем</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-
-    <!-- ЭКРАН ВХОДА -->
-    <div id="login-screen" class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Вход в систему</h2>
-        <form id="login-form" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Логин</label>
-                <input type="text" id="username" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Пароль</label>
-                <input type="password" id="password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            <p id="error-msg" class="text-red-500 text-sm hidden">Неверный логин или пароль</p>
-            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
-                Войти
-            </button>
-        </form>
-    </div>
-
-    <!-- ЭКРАН ДАШБОРДА (скрыт по умолчанию) -->
-    <div id="dashboard-screen" class="hidden w-full max-w-6xl">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Мониторинг проблем и лидов</h1>
-            <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition text-sm">Выйти</button>
-        </div>
-        
-        <div id="loading" class="text-center text-gray-500 py-10">Загрузка данных...</div>
-        <div id="problems-container" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('login-form');
-            const loginScreen = document.getElementById('login-screen');
-            const dashboardScreen = document.getElementById('dashboard-screen');
-            const problemsContainer = document.getElementById('problems-container');
-            const loading = document.getElementById('loading');
-            const errorMsg = document.getElementById('error-msg');
-            const logoutBtn = document.getElementById('logout-btn');
-
-            if (!loginForm) {
-                console.error('КРИТИЧЕСКАЯ ОШИБКА: Элемент #login-form не найден в HTML');
-                return;
-            }
-
-            const token = localStorage.getItem('auth_token');
-            console.log('При загрузке страницы токен:', token ? 'найден' : 'отсутствует');
-            if (token) {
-                showDashboard();
-            }
-
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-
-                try {
-                    console.log('Отправка запроса на логин...');
-                    const response = await fetch('/api/auth/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password })
-                    });
-
-                    console.log('Ответ от сервера (статус):', response.status);
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log('Полученные данные от auth:', data);
-                        
-                        const newToken = data.access_token || data.token;
-                        
-                        if (newToken) {
-                            localStorage.setItem('auth_token', newToken);
-                            console.log('✅ Токен сохранен в localStorage');
-                            showDashboard();
-                        } else {
-                            console.error('❌ Токен не найден в ответе:', data);
-                            errorMsg.innerText = "Ошибка: токен не получен от сервера";
-                            errorMsg.classList.remove('hidden');
-                        }
-                    } else {
-                        const errorData = await response.json().catch(() => ({}));
-                        console.error('❌ Ошибка логина:', errorData);
-                        errorMsg.innerText = "Неверный логин или пароль";
-                        errorMsg.classList.remove('hidden');
-                    }
-                } catch (error) {
-                    console.error('❌ Ошибка соединения:', error);
-                    errorMsg.innerText = "Ошибка соединения с сервером";
-                    errorMsg.classList.remove('hidden');
-                }
-            });
-
-            function showDashboard() {
-                loginScreen.classList.add('hidden');
-                dashboardScreen.classList.remove('hidden');
-                document.body.classList.remove('items-center', 'justify-center');
-                document.body.classList.add('items-start', 'pt-10');
-                loadData();
-            }
-
-            async function loadData() {
-                const currentToken = localStorage.getItem('auth_token');
-                console.log('=== НАЧАЛО ЗАГРУЗКИ ДАННЫХ ===');
-                console.log('Токен из localStorage:', currentToken ? currentToken.substring(0, 30) + '...' : 'НЕТ ТОКЕНА');
-                console.log('Длина токена:', currentToken ? currentToken.length : 0);
-                
-                loading.classList.remove('hidden');
-                problemsContainer.innerHTML = '';
-
-                try {
-                    console.log('Отправка запроса к /api/problem-service/top-problems-with-leads');
-                    
-                    const headers = {
-                        'Authorization': `Bearer ${currentToken}`
-                    };
-                    console.log('Заголовки запроса:', headers);
-                    
-                    const response = await fetch('/api/problem-service/top-problems-with-leads', {
-                        headers: headers
-                    });
-
-                    console.log('=== ОТВЕТ ОТ СЕРВЕРА ===');
-                    console.log('Статус:', response.status);
-                    
-                    const responseText = await response.text();
-                    console.log('Тело ответа:', responseText);
-                    
-                    if (response.status === 401) {
-                        console.error('❌ ТОКЕН ОТКЛОНЕН (401)');
-                        console.error('Возможные причины:');
-                        console.error('1. JWT_SECRET_KEY в api-gateway не совпадает с auth-service');
-                        console.error('2. Токен истек');
-                        console.error('3. Формат токена неверный');
-                        
-                        problemsContainer.innerHTML = `
-                            <div class="col-span-full bg-red-50 p-6 rounded-lg border border-red-200">
-                                <h3 class="text-red-800 font-bold mb-2">Ошибка авторизации (401)</h3>
-                                <p class="text-red-600 text-sm mb-4">Токен не прошел валидацию в API Gateway</p>
-                                <div class="text-xs text-gray-600 space-y-1">
-                                    <p><strong>Токен:</strong> ${currentToken ? currentToken.substring(0, 50) + '...' : 'отсутствует'}</p>
-                                    <p><strong>Длина:</strong> ${currentToken ? currentToken.length : 0} символов</p>
-                                    <p><strong>Ответ сервера:</strong> ${responseText}</p>
-                                </div>
-                                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                                    Обновить страницу
-                                </button>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ошибка: ${response.status}`);
-                    }
-
-                    const data = JSON.parse(responseText);
-                    console.log('✅ Успешно получены данные:', data);
-                    
-                    data.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition';
-                        
-                        const linksHtml = item.leads && item.leads.length > 0 
-                            ? item.leads.map(link => `<a href="${link}" target="_blank" class="block text-blue-600 hover:text-blue-800 hover:underline text-sm mb-2 truncate" title="${link}">🔗 ${link.split('/').pop().substring(0, 40)}...</a>`).join('')
-                            : '<span class="text-gray-400 text-sm">Ссылки отсутствуют</span>';
-
-                        card.innerHTML = `
-                            <div class="flex justify-between items-start mb-4">
-                                <h2 class="text-lg font-semibold text-gray-900 leading-tight">${item.problem}</h2>
-                                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap ml-2">${item.mentions}</span>
-                            </div>
-                            <div class="border-t pt-3 space-y-1">${linksHtml}</div>
-                        `;
-                        problemsContainer.appendChild(card);
-                    });
-                } catch (error) {
-                    console.error('❌ Ошибка загрузки данных:', error);
-                    problemsContainer.innerHTML = '<p class="text-red-500 col-span-full">Ошибка загрузки данных. Проверьте консоль.</p>';
-                } finally {
-                    loading.classList.add('hidden');
-                }
-            }
-
-            function logout() {
-                console.log('Выход из системы');
-                localStorage.removeItem('auth_token');
-                location.reload();
-            }
-
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', logout);
-            }
         });
     </script>
 </body>

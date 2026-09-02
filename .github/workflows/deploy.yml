@@ -1,0 +1,39 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH and Git Pull
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            echo "Переход в директорию проекта..."
+            cd ~/Registration-backend-service
+            
+            echo "Сброс локальных изменений (чтобы git pull не конфликтовал)..."
+            git reset --hard HEAD
+            git clean -fd
+            
+            echo "Обновление кода из репозитория..."
+            git pull origin main
+            
+            echo "Пересборка и перезапуск контейнеров..."
+            docker compose down
+            docker compose up -d --build
+            
+            echo "Очистка старых образов..."
+            docker image prune -f
+            
+            echo "✅ Деплой успешно завершен!"
