@@ -15,7 +15,6 @@
             <button id="tab-register" class="flex-1 pb-2 text-center font-medium text-gray-500 hover:text-gray-700 transition">Регистрация</button>
         </div>
 
-        <!-- Форма входа -->
         <form id="login-form" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Логин</label>
@@ -29,7 +28,6 @@
             <button type="submit" class="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition">Войти</button>
         </form>
 
-        <!-- Форма регистрации (скрыта) -->
         <form id="register-form" class="space-y-4 hidden">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Логин</label>
@@ -53,13 +51,14 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <h1 class="text-3xl font-bold text-gray-800">Мониторинг проблем и лидов</h1>
             <div class="flex flex-wrap gap-2">
-                <button onclick="triggerAction('/', 'Пайплайн запущен')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm font-medium">Запустить парсинг</button>
-                <button onclick="triggerAction('/normalize-problems', 'Нормализация запущена')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition text-sm font-medium">Нормализовать</button>
-                <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">Обновить</button>
+                <!-- ИСПРАВЛЕНЫ ПУТИ: добавлен префикс /api/problem-service/ -->
+                <button onclick="triggerAction('/api/problem-service/', 'Пайплайн парсинга запущен')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition text-sm font-medium">Запустить парсинг</button>
+                <button onclick="triggerAction('/api/problem-service/normalize-problems', 'Нормализация запущена')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition text-sm font-medium">Нормализовать</button>
+                <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-medium">Обновить таблицу</button>
                 <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition text-sm font-medium">Выйти</button>
             </div>
         </div>
-        <div id="status-msg" class="hidden mb-4 p-3 bg-green-100 text-green-800 rounded border border-green-200 text-sm"></div>
+        <div id="status-msg" class="hidden mb-4 p-3 rounded border text-sm"></div>
         <div id="loading" class="text-center text-gray-500 py-10">Загрузка данных...</div>
         <div id="problems-container" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
     </div>
@@ -73,7 +72,6 @@
             const loginForm = document.getElementById('login-form');
             const registerForm = document.getElementById('register-form');
 
-            // Переключение вкладок
             tabLogin.addEventListener('click', () => {
                 loginForm.classList.remove('hidden');
                 registerForm.classList.add('hidden');
@@ -92,12 +90,10 @@
                 tabLogin.classList.add('text-gray-500');
             });
 
-            // Проверка токена
             if (localStorage.getItem('auth_token')) {
                 showDashboard();
             }
 
-            // Логин
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const errorMsg = document.getElementById('login-error');
@@ -125,7 +121,6 @@
                 }
             });
 
-            // Регистрация
             registerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const errorMsg = document.getElementById('reg-error');
@@ -162,12 +157,43 @@
                 loadData();
             }
 
+            // ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЕЙСТВИЙ
             window.triggerAction = async function(endpoint, successMsg) {
+                const token = localStorage.getItem('auth_token');
                 const msgBox = document.getElementById('status-msg');
-                msgBox.innerText = successMsg;
+                
+                msgBox.innerText = "Выполняется запрос...";
+                msgBox.className = "mb-4 p-3 bg-blue-100 text-blue-800 rounded border border-blue-200 text-sm";
                 msgBox.classList.remove('hidden');
-                setTimeout(() => msgBox.classList.add('hidden'), 5000);
-                await fetch(endpoint, { method: 'GET' });
+
+                try {
+                    console.log(`Отправка запроса на: ${endpoint}`);
+                    const response = await fetch(endpoint, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}` // <-- ДОБАВЛЕН ТОКЕН
+                        }
+                    });
+
+                    console.log(`Ответ сервера: ${response.status}`);
+
+                    if (response.ok) {
+                        msgBox.innerText = `✅ ${successMsg}`;
+                        msgBox.className = "mb-4 p-3 bg-green-100 text-green-800 rounded border border-green-200 text-sm";
+                        setTimeout(() => msgBox.classList.add('hidden'), 5000);
+                        // Автоматически обновляем таблицу после действия
+                        setTimeout(() => loadData(), 2000); 
+                    } else {
+                        const errText = await response.text();
+                        console.error("Ошибка сервера:", response.status, errText);
+                        msgBox.innerText = `❌ Ошибка: ${response.status}. Проверь консоль (F12)`;
+                        msgBox.className = "mb-4 p-3 bg-red-100 text-red-800 rounded border border-red-200 text-sm";
+                    }
+                } catch (error) {
+                    console.error("Ошибка сети:", error);
+                    msgBox.innerText = "❌ Ошибка соединения с сервером";
+                    msgBox.className = "mb-4 p-3 bg-red-100 text-red-800 rounded border border-red-200 text-sm";
+                }
             }
 
             async function loadData() {
@@ -179,20 +205,34 @@
                 container.innerHTML = '';
 
                 try {
+                    console.log("Загрузка данных с токеном...");
                     const response = await fetch('/api/problem-service/top-problems-with-leads', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    if (response.status === 401) { logout(); return; }
+                    
+                    console.log("Статус загрузки данных:", response.status);
+
+                    if (response.status === 401) { 
+                        console.warn("Токен недействителен, выход из системы");
+                        logout(); 
+                        return; 
+                    }
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
                     const data = await response.json();
+                    console.log("Получено записей:", data.length);
                     
                     if (data.length === 0) {
-                        container.innerHTML = '<p class="text-gray-500 col-span-full text-center">Данных пока нет. Нажмите "Запустить парсинг".</p>';
+                        container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-10">Данных пока нет. Нажмите "Запустить парсинг" и подождите 10-20 секунд.</p>';
                     } else {
                         data.forEach(item => {
                             const card = document.createElement('div');
                             card.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition';
                             const linksHtml = item.leads && item.leads.length > 0 
-                                ? item.leads.map(link => `<a href="${link}" target="_blank" class="block text-blue-600 hover:text-blue-800 hover:underline text-sm mb-2 truncate" title="${link}"> ${link.split('/').pop().substring(0, 40)}...</a>`).join('')
+                                ? item.leads.map(link => `<a href="${link}" target="_blank" class="block text-blue-600 hover:text-blue-800 hover:underline text-sm mb-2 truncate" title="${link}">🔗 ${link.split('/').pop().substring(0, 40)}...</a>`).join('')
                                 : '<span class="text-gray-400 text-sm">Ссылки отсутствуют</span>';
                             card.innerHTML = `
                                 <div class="flex justify-between items-start mb-4">
@@ -205,7 +245,8 @@
                         });
                     }
                 } catch (error) {
-                    container.innerHTML = '<p class="text-red-500 col-span-full text-center">Ошибка загрузки.</p>';
+                    console.error("Критическая ошибка загрузки:", error);
+                    container.innerHTML = '<p class="text-red-500 col-span-full text-center">Ошибка загрузки данных. Откройте консоль (F12) для деталей.</p>';
                 } finally {
                     loading.classList.add('hidden');
                 }
