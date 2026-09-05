@@ -27,10 +27,9 @@ async def verify_token_optional(request: Request, credentials: HTTPAuthorization
     """Проверяет токен, но только если путь не начинается с auth/"""
     path = request.url.path
     logger.info(f"Проверка токена для пути: {path}")
-    logger.info(f"Путь для проверки: {path.split('/')[2]}")
     
     # Для auth-эндпоинтов токен не требуется
-    if path.split("/")[2] in settings.NO_CREDENTIALS_PATHS:
+    if path in settings.NO_CREDENTIALS_PATHS:
         return None
     
     if not credentials:
