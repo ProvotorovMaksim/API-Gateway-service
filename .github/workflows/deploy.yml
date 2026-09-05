@@ -24,7 +24,7 @@ jobs:
             
             echo "Сброс локальных изменений (чтобы git pull не конфликтовал)..."
             git reset --hard HEAD
-            git clean -fd
+            git clean -fd -e .env
             
             echo "Обновление кода из репозитория..."
             git pull origin main

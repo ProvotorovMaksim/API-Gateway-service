@@ -5,13 +5,8 @@ services:
     ports:
       - "8000:8000" # Единый порт для всего фронтенда
     environment:
-      JWT_SECRET_KEY: "AOJNFOADNLAKMFANKDFOnAOLNFALS<E23roj2nroWJNijbsdfojnsdlfno2jnfowjbndfiusb9fogbsdfnsldknf"
-      SERVICES_URLS: |
-        {
-          "auth": "http://register-auth-service:8001",
-          "problem-service": "http://problem-service:8002",
-          "hypo-service": "http://hypo-service:8003"
-        }
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      SERVICES_URLS: ${SERVICES_URLS}
     networks:
       - saas_network
     restart: unless-stopped
