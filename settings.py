@@ -13,7 +13,10 @@ class Settings(BaseSettings):
 
     NO_CREDENTIALS_PATHS: list[str] = [
         "/api/auth",
+        "/api/auth/login",
+        "/api/auth/register",
         "/api/hypo-service",
+        "/api/hypo-service/frontend"
     ]
 
     class Config:
