@@ -13,9 +13,9 @@ class Settings(BaseSettings):
 
     NO_CREDENTIALS_PATHS: list[str] = [
         "/api/auth",
-        "/api/hypo",
+        "/api/hypo-service",
     ]
-    
+
     class Config:
         env_file = ".env"
 
