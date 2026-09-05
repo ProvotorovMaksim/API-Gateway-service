@@ -16,7 +16,7 @@ class Settings(BaseSettings):
         "/api/auth/login",
         "/api/auth/register",
         "/api/hypo-service",
-        "/api/hypo-service/frontend"
+        "/api/hypo-service/frontend",
         "/api/hypothesis"
     ]
 
