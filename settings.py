@@ -17,7 +17,7 @@ class Settings(BaseSettings):
         "/api/auth/register",
         "/api/hypo-service",
         "/api/hypo-service/frontend"
-        "/api/hypothesis/"
+        "/api/hypothesis"
     ]
 
     class Config:
