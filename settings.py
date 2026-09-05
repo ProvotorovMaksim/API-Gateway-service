@@ -11,6 +11,11 @@ class Settings(BaseSettings):
         "problem-service": "http://problem-service:8002",
     }
 
+    NO_CREDENTIALS_PATHS: list[str] = [
+        "/api/auth",
+        "/api/hypo",
+    ]
+    
     class Config:
         env_file = ".env"
 

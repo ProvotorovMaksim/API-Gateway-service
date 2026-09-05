@@ -9,7 +9,8 @@ services:
       SERVICES_URLS: |
         {
           "auth": "http://register-auth-service:8001",
-          "problem-service": "http://problem-service:8002"
+          "problem-service": "http://problem-service:8002",
+          "hypo-service": "http://hypo-service:8003"
         }
     networks:
       - saas_network
