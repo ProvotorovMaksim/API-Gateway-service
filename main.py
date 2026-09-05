@@ -28,7 +28,7 @@ async def verify_token_optional(request: Request, credentials: HTTPAuthorization
     path = request.url.path
     
     # Для auth-эндпоинтов токен не требуется
-    if path.split("/")[0] in settings.NO_CREDENTIALS_PATHS:
+    if path.split("/")[2] in settings.NO_CREDENTIALS_PATHS:
         return None
     
     if not credentials:
