@@ -29,7 +29,7 @@ async def verify_token_optional(request: Request, credentials: HTTPAuthorization
     logger.info(f"Проверка токена для пути: {path}")
     
     # Для auth-эндпоинтов токен не требуется
-    if any(path in ncp for ncp in settings.NO_CREDENTIALS_PATHS):
+    if any(ncp in path for ncp in settings.NO_CREDENTIALS_PATHS):
         return None
     
     if not credentials:
