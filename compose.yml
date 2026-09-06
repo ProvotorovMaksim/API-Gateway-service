@@ -41,7 +41,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       
       # Секция [server] -> заменяется на GF_SERVER_...
-      - GF_SERVER_ROOT_URL=https://babkagram.ru
+      - GF_SERVER_ROOT_URL=https://babkagram.ru/api/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
       
       # Секция [security] -> заменяется на GF_SECURITY_...
