@@ -39,9 +39,10 @@ services:
       - grafana_data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin # Пароль для первого входа (логин: admin)
-      - GF_SERVER_ROOT_URL=http://babkagram.ru/api/grafana
+      - GF_SERVER_ROOT_URL=http://babkagram.ru/api/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=false
       - GF_SECURITY_CSRF_TRUSTED_ORIGINS=http://babkagram.ru
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
 
     depends_on:
       - prometheus
