@@ -39,19 +39,12 @@ services:
       - grafana_data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      
-      # 1. СЛЕШ НА КОНЦЕ ОБЯЗАТЕЛЕН (иначе сломаются пути к файлам приложения)
+      # Пишем базовый адрес шлюза
       - GF_SERVER_ROOT_URL=https://babkagram.ru/api/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
-      
-      # 2. Полностью отключаем CSRF-блокировку для API (за шлюзом это безопасно)
-      - GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION=false
-      - GF_SECURITY_CSRF_ADDITIONAL_HEADERS=
-      - GF_SERVER_PROXIED=true
-      
-      # 3. Разрешаем куки для вашего HTTPS домена
+      # Ослабляем куки, чтобы они не блокировались при проксировании
       - GF_SECURITY_COOKIE_SECURE=true
-      - GF_SECURITY_COOKIE_SAMESITE=none # Позволяет кукам свободно ходить через шлюз
+      - GF_SECURITY_COOKIE_SAMESITE=none
     depends_on:
       - prometheus
     networks:

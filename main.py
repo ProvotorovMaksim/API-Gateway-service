@@ -97,10 +97,16 @@ async def proxy_to_grafana_isolated(request: Request, path: str):
     if request.url.query:
         target_url += f"?{request.url.query}"
 
-    # Копируем заголовки, подменяя Host для внутренней докер-сети
+    # 1. Копируем входящие заголовки из браузера
     headers = dict(request.headers)
-    headers["host"] = base_url.replace("http://", "").replace("https://", "")
-    headers.pop("content-length", None)
+    
+    # 2. Подменяем хост на внутреннее имя сервиса Grafana в Docker
+    headers["host"] = "grafana:3000"
+    
+    # 3. 👇 УДАЛЯЕМ заголовок Origin и Referer (Это полностью обнуляет CSRF-панику Grafana)
+    headers.pop("origin", None)
+    headers.pop("referer", None)
+    headers.pop("content-length", None)    
     
     try:
         response = await http_client.request(
