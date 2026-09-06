@@ -76,12 +76,31 @@ async def proxy_to_service(request: Request, path: str, user_id: str = Depends(v
             content=await request.body()
         )
         
-        return Response(
+        # 1. Создаем базовый ответ
+        gateway_response = Response(
             content=response.content,
             status_code=response.status_code,
-            media_type=response.headers.get("content-type", "application/json"),
-            headers={k: v for k, v in response.headers.items() if k.lower() not in ["content-length", "transfer-encoding"]}
+            media_type=response.headers.get("content-type", "application/json")
         )
+        
+        # 2. Переносим заголовки, аккуратно обрабатывая дубликаты (особенно Set-Cookie)
+        # В httpx.Response заголовки хранятся в специальном регистронезависимом виде, 
+        # где через `.raw` можно достать все дублирующиеся ключи.
+        for key, value in response.headers.raw:
+            k = key.decode("utf-8").lower()
+            v = value.decode("utf-8")
+            
+            if k in ["content-length", "transfer-encoding"]:
+                continue
+                
+            # Если это кука, добавляем её через метод append, чтобы заголовки не затирались
+            if k == "set-cookie":
+                gateway_response.headers.append(k, v)
+            else:
+                gateway_response.headers[k] = v
+
+        return gateway_response
+
     except httpx.RequestError as exc:
         logger.error(f"Ошибка проксирования к {target_url}: {exc}")
         raise HTTPException(status_code=502, detail=f"Не удалось связаться с сервисом '{service_name}'")
