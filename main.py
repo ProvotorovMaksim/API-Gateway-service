@@ -85,46 +85,46 @@ async def proxy_grafana_websocket(websocket: WebSocket):
     except Exception as e:
         logger.error(f"Ошибка WebSocket прокси Grafana: {e}")
 
-# --- Выделенный прозрачный роут для Grafana (СТРОГО ВЫШЕ общего прокси) ---
+# --- Идеальный изолированный прокси для Grafana (СТРОГО ВЫШЕ общего прокси) ---
 @app.api_route("/api/grafana/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
-async def proxy_to_grafana_isolated(request: Request, path: str):
-    # Достаем базовый URL Grafana из настроек
+async def proxy_to_grafana_final(request: Request, path: str):
+    # Берем адрес контейнера из ваших настроек
     base_url = settings.SERVICES_URLS.get("grafana", "http://grafana:3000")
     
-    # ВАЖНО: Так как в Grafana включен SERVE_FROM_SUB_PATH, 
-    # мы ОБЯЗАНЫ передавать внутренний путь вместе с префиксом /api/grafana/
+    # ВАЖНО: Так как в Grafana включен SERVE_FROM_SUB_PATH, внутри докера 
+    # она ЖДЕТ путь вместе со своим префиксом: /api/grafana/{подпуть}
     target_url = f"{base_url}/api/grafana/{path}"
     if request.url.query:
         target_url += f"?{request.url.query}"
 
-    # 1. Копируем входящие заголовки из браузера
+    # Бережно копируем заголовки браузера
     headers = dict(request.headers)
-    
-    # 2. Подменяем хост на внутреннее имя сервиса Grafana в Docker
     headers["host"] = "grafana:3000"
     
-    # 3. 👇 УДАЛЯЕМ заголовок Origin и Referer (Это полностью обнуляет CSRF-панику Grafana)
+    # Полностью удаляем заголовки Origin и Referer, чтобы окончательно засилить CSRF-защиту
     headers.pop("origin", None)
     headers.pop("referer", None)
-    headers.pop("content-length", None)    
+    headers.pop("content-length", None)
     
     try:
         response = await http_client.request(
             method=request.method,
             url=target_url,
             headers=headers,
-            content=await request.body(),
-            follow_redirects=False # Не даем httpx самому ходить по редиректам
+            params=request.query_params,
+            content=await request.body()
         )
         
-        # Создаем чистый ответ
+        # Передаем контент-тип, чтобы файлы стилей и скриптов определялись браузером корректно
+        media_type = response.headers.get("content-type", "application/json")
+        
         gateway_response = Response(
             content=response.content,
             status_code=response.status_code,
-            media_type=response.headers.get("content-type", "application/json")
+            media_type=media_type
         )
         
-        # Переносим ВСЕ заголовки (включая множественные Set-Cookie и Location для редиректов)
+        # Передаем ВСЕ куки авторизации без затирания (исправляет Forbidden)
         for key, value in response.headers.raw:
             k = key.decode("utf-8").lower()
             v = value.decode("utf-8")
@@ -139,7 +139,7 @@ async def proxy_to_grafana_isolated(request: Request, path: str):
 
     except httpx.RequestError as exc:
         logger.error(f"Ошибка проксирования к Grafana: {exc}")
-        raise HTTPException(status_code=502, detail="Grafana недоступна")
+        raise HTTPException(status_code=502, detail="Сервис Grafana недоступен")
 
 # --- Единый прокси-маршрут ---
 @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
