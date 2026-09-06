@@ -49,6 +49,43 @@ async def verify_token_optional(request: Request, credentials: HTTPAuthorization
         logger.error(f"Ошибка валидации JWT: {str(e)}")
         raise HTTPException(status_code=401, detail=f"Недействительный токен: {str(e)}")
 
+import websockets
+from fastapi import WebSocket, WebSocketDisconnect
+
+# Хэндлер для WebSocket-соединений Grafana
+@app.websocket("/api/grafana/api/live/ws")
+async def proxy_grafana_websocket(websocket: WebSocket):
+    await websocket.accept()
+    
+    # Внутренний адрес WebSocket Grafana в контейнере
+    # Обратите внимание: используем ws:// вместо http://
+    target_ws_url = "ws://grafana:3000/api/grafana/api/live/ws"
+    
+    try:
+        # Подключаемся к Grafana изнутри шлюза
+        async with websockets.connect(target_ws_url) as target_ws:
+            
+            # Фоновая задача для пересылки сообщений ИЗ Grafana В браузер
+            async def forward_to_browser():
+                try:
+                    async for message in target_ws:
+                        await websocket.send_text(message) # type: ignore
+                except Exception:
+                    pass
+
+            import asyncio
+            asyncio.create_task(forward_to_browser())
+
+            # Читаем сообщения ИЗ браузера и шлем В Grafana
+            async for message in websocket.iter_text():
+                await target_ws.send(message)
+                
+    except WebSocketDisconnect:
+        logger.info("Браузер отключился от WebSocket Grafana")
+    except Exception as e:
+        logger.error(f"Ошибка WebSocket прокси Grafana: {e}")
+
+
 # --- Единый прокси-маршрут ---
 @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_to_service(request: Request, path: str, user_id: str = Depends(verify_token_optional)):
