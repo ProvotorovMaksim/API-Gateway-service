@@ -38,14 +38,17 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin # Пароль для первого входа (логин: admin)
-      - GF_SERVER_ROOT_URL=https://babkagram.ru/api/grafana/
-      - GF_SECURITY_CSRF_TRUSTED_ORIGINS=https://babkagram.ru/
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      
+      # Секция [server] -> заменяется на GF_SERVER_...
+      - GF_SERVER_ROOT_URL=https://babkagram.ru
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
-      - GF_SECURITY_CSRF_ADDITIONAL_HEADERS=
-      - GF_SERVER_PROXIED=true
-
-
+      
+      # Секция [security] -> заменяется на GF_SECURITY_...
+      # ВАЖНО: для CSRF_TRUSTED_ORIGINS в Grafana 11 используется ДВОЙНОЕ подчеркивание для разделения слов параметра:
+      - GF_SECURITY_CSRF_TRUSTED_ORIGINS=https://babkagram.ru
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_SAMESITE=lax
     depends_on:
       - prometheus
     networks:
