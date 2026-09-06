@@ -10,6 +10,46 @@ services:
     networks:
       - saas_network
     restart: unless-stopped
+    # Сервер Prometheus
+  prometheus:
+    image: prom/prometheus:v2.54.1 # Используем стабильную версию
+    container_name: prometheus
+    volumes:
+      # Пробрасываем файл конфигурации внутрь контейнера
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # (Опционально) Сохраняем данные метрик на диске хоста, чтобы они не стирались при перезапуске
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090" # Веб-интерфейс Prometheus будет доступен тут
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      - api-gateway
+    networks:
+      - saas_network
+    restart: unless-stopped
+    # Визуализатор Grafana
+  grafana:
+    image: grafana/grafana:11.1.0 # Используем актуальную стабильную версию
+    container_name: grafana
+    ports:
+      - "3000:3000" # Графина будет доступна на http://localhost:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin # Пароль для первого входа (логин: admin)
+    depends_on:
+      - prometheus
+    networks:
+      - saas_network
+    restart: unless-stopped
+
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
 networks:
   saas_network:
     driver: bridge

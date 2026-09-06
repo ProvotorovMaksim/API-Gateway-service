@@ -5,6 +5,7 @@ from jose import jwt, JWTError, ExpiredSignatureError
 import httpx
 from settings import settings
 from logging import getLogger
+from prometheus_fastapi_instrumentator import Instrumentator
 
 logger = getLogger("main")
 logger.setLevel("INFO")
@@ -88,3 +89,5 @@ async def proxy_to_service(request: Request, path: str, user_id: str = Depends(v
 @app.get("/health", include_in_schema=False)
 async def health_check():
     return {"status": "ok"}
+
+Instrumentator().instrument(app).expose(app)
