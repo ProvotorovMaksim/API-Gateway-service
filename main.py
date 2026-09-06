@@ -85,6 +85,55 @@ async def proxy_grafana_websocket(websocket: WebSocket):
     except Exception as e:
         logger.error(f"Ошибка WebSocket прокси Grafana: {e}")
 
+# --- Выделенный прозрачный роут для Grafana (СТРОГО ВЫШЕ общего прокси) ---
+@app.api_route("/api/grafana/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_to_grafana_isolated(request: Request, path: str):
+    # Достаем базовый URL Grafana из настроек
+    base_url = settings.SERVICES_URLS.get("grafana", "http://grafana:3000")
+    
+    # ВАЖНО: Так как в Grafana включен SERVE_FROM_SUB_PATH, 
+    # мы ОБЯЗАНЫ передавать внутренний путь вместе с префиксом /api/grafana/
+    target_url = f"{base_url}/api/grafana/{path}"
+    if request.url.query:
+        target_url += f"?{request.url.query}"
+
+    # Копируем заголовки, подменяя Host для внутренней докер-сети
+    headers = dict(request.headers)
+    headers["host"] = base_url.replace("http://", "").replace("https://", "")
+    headers.pop("content-length", None)
+    
+    try:
+        response = await http_client.request(
+            method=request.method,
+            url=target_url,
+            headers=headers,
+            content=await request.body(),
+            follow_redirects=False # Не даем httpx самому ходить по редиректам
+        )
+        
+        # Создаем чистый ответ
+        gateway_response = Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type=response.headers.get("content-type", "application/json")
+        )
+        
+        # Переносим ВСЕ заголовки (включая множественные Set-Cookie и Location для редиректов)
+        for key, value in response.headers.raw:
+            k = key.decode("utf-8").lower()
+            v = value.decode("utf-8")
+            if k in ["content-length", "transfer-encoding"]:
+                continue
+            if k == "set-cookie":
+                gateway_response.headers.append(k, v)
+            else:
+                gateway_response.headers[k] = v
+
+        return gateway_response
+
+    except httpx.RequestError as exc:
+        logger.error(f"Ошибка проксирования к Grafana: {exc}")
+        raise HTTPException(status_code=502, detail="Grafana недоступна")
 
 # --- Единый прокси-маршрут ---
 @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
